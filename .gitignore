@@ -1,0 +1,14 @@
+node_modules
+.next
+.env*
+!.env.example
+coverage
+
+# Private Kerbwise challenge materials
+desk-brief.md
+desk-api-notes.md
+orders-pr.md
+browser-log.txt
+orders-server.js
+orders-server.decoded.js
+orders.json
