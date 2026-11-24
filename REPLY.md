@@ -1,10 +1,12 @@
 Hi Hannah,
 
-I wouldn't recommend relying on the printed slips just yet. Order 2273 showed the wrong amount, the printer printed the same slip several times, and a packing note didn't reach the right person.
+The team can continue using the desk to look up orders, but I wouldn't recommend relying on the printed slips yet.
 
-The team can still use the desk to look up orders, but they should double-check the amounts against the actual payments and pass important notes directly to the person packing each order.
+We've identified a problem with the total on order 2273, repeated printing, and a packing note that wasn't shared correctly. These could lead to mistakes during packing.
 
-I'll look into these problems, starting with the incorrect totals and repeated printing. I'll let you know when we've tested the fixes and can safely rely on the slips again.
+For now, I'd ask the team to double-check order totals against payment records and pass important packing notes directly to the person handling each order. They should avoid relying on printed slips until we've fixed and tested the issues.
+
+I'll prioritise these problems and update you before the 2:30 packing session.
 
 Best,
 Sylvanus
