@@ -1,53 +1,62 @@
-# Step 2 — Decisions
+# Decisions and Trade-offs
 
-## What I found
+While testing the order desk against the real API, I found a few behaviours that needed special attention. I focused mainly on situations where a packer could see incorrect information, lose work, or accidentally make the wrong fulfilment decision.
 
-### 1. The live API can return non-JSON errors
-On the real server, page 2 deliberately returns a delayed 503 HTML response once.
+## What I found and what I did
 
-**Decision:** treat any non-2xx response as an error and show a retry action. The API helper does not assume every failed response is JSON.
+### 1. The API doesn't always return a normal response
 
-**Why:** a packer should never see a blank desk or stale-looking success state after an upstream failure.
+The real API deliberately returns a delayed 503 error on page 2, and the response is HTML rather than JSON.
 
-### 2. The real server is slower and rate-limited
-List requests are delayed and more than seven requests in a two-second window return 429.
+I made the API helper handle unsuccessful responses without assuming they always contain JSON. It retries temporary 503 and 429 errors once, then reports the error so the user can try again.
 
-**Decision:** debounce search, avoid request-per-keystroke behaviour, and keep the current view stable while a request is loading.
+I wanted to avoid situations where a failed request looks like a successful one or leaves the packer unsure whether the information on screen is current.
 
-**Why:** this reduces accidental request bursts during fast scanning/searching.
+### 2. The API is slower and has request limits
 
-### 3. Live data changes while a packer is viewing it
-Orders can arrive while the desk is open, and fulfilment uses a version.
+The real server introduces delays and can return 429 errors if too many requests are made in a short period.
 
-**Decision:** refresh the list periodically when no order panel is open, and send the order version with fulfilment.
+I avoided sending a request for every search keystroke by debouncing search. I also kept the existing view stable while new data loads.
 
-**Why:** the desk gets new work without interrupting a packer's focused task. Versioning lets the API reject stale writes.
+This helps reduce unnecessary requests, especially when someone is quickly scanning or searching for orders.
 
-### 4. Fulfilment can conflict
-Order `ord_2286` is deliberately changed once during the real-mode test.
+### 3. Orders can change while someone is using the desk
 
-**Decision:** surface a conflict instead of pretending fulfilment succeeded, and ask the packer to close/reopen the order to see the current state.
+New orders can arrive while the application is open, and order data can change before a packer finishes an action.
 
-**Why:** showing "fulfilled" when another packer changed the order could cause a duplicate or incorrect packing action.
+I used periodic list refreshing when an order isn't open and included the order version when sending fulfilment requests.
 
-### 5. Real responses are intentionally untidy
-The real API varies name formatting, status casing, date representation and total representation.
+This helps keep the list up to date without constantly interrupting someone who is working on a particular order.
 
-**Decision:** keep the UI tolerant of the documented response shape where possible and avoid displaying personal phone numbers in the packer workflow.
+### 4. Fulfilment can fail because an order has changed
 
-**Why:** the desk needs to remain useful when real upstream data is imperfect.
+The real API deliberately creates a conflict for order `ord_2286`. This simulates another person changing the order while the current packer is viewing it.
+
+Rather than treating the action as successful, I updated the conflict handling to fetch the latest order details and update the desk. The packer can then review the current information before trying again.
+
+This matters because showing an order as fulfilled when the server rejected the update could lead to mistakes during packing.
+
+### 5. Real order data isn't always consistent
+
+The API returns different formats for names, statuses, dates and totals. I made the frontend normalise these values before displaying them.
+
+I also left personal phone numbers out of the packer's order view because they aren't needed for the main packing workflow.
+
+The aim was to make the desk handle imperfect data without confusing the person using it.
 
 ## What I left out
 
-- Automatic retry of 503/429 responses: the operator gets an explicit retry instead. Automatic retries can create additional traffic and are harder to reason about during a busy period.
-- Optimistic fulfilment: the UI waits for the server response because fulfilment has a direct operational cost.
-- Dark mode and Excel export: useful product work, but not required for this assessment and less important than reliable packing.
-- Full cross-user realtime updates: the mock API does not provide a subscription mechanism, so polling is the smallest honest solution for this version.
+I deliberately kept the scope focused on the main order-management workflow.
 
-## Questions for Kerbwise
+- I didn't add repeated automatic retries. The helper makes one retry for temporary 503/429 errors, then surfaces the problem instead of repeatedly sending requests.
+- I avoided optimistic fulfilment. The interface waits for the server to confirm the change before showing it as successful.
+- I left out dark mode and Excel export because they weren't essential to the assessment.
+- I didn't implement full realtime updates between packers. The supplied API doesn't offer subscriptions, so periodic refreshing was a simpler approach.
 
-1. Should the packer role be prevented from receiving phone numbers at the API level as well as hidden in the UI?
-2. What is the desired freshness target for new orders: seconds, or is a 30-second refresh acceptable?
-3. When a conflict occurs, should the desk automatically reload the latest order or require the packer to confirm?
-4. What is the expected operational policy for orders on hold, refunded or partially refunded?
-5. Should fulfilment be reversible, and who is allowed to do that?
+## Questions I'd ask the Kerbwise team
+
+1. Should packers be prevented from accessing customer phone numbers at the API level too, rather than only hiding them in the interface?
+2. How quickly should new orders appear? Is a 30-second refresh acceptable, or does the shop need something faster?
+3. When two packers try to update the same order, is refreshing the latest information the expected behaviour?
+4. How should orders on hold, refunded or partially refunded be handled?
+5. Should a fulfilment action ever be reversible, and who should have permission to reverse it?
