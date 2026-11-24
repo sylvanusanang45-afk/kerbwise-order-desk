@@ -1,55 +1,61 @@
-# Pull request review — OrderPanel
+# Pull Request Review
 
-## 1. Blocker — The order total is calculated incorrectly
+Hi Kwesi,
 
-`lineTotal` is already the price of the whole line, including quantity, according to the API contract. The PR multiplies it by `qty` again.
+I've gone through the changes to the order panel. There are some good ideas here, but I found five things we should address before relying on this in the packing room.
 
-The browser log shows the result clearly: order 2273 is £88.00 from the API but the panel renders £132.00. This is a money-critical defect and can put the wrong amount on a packing slip.
+I've ranked them by how much damage they could cause.
 
-**Please fix before merge:** use `lineTotal` directly.
+## 1. The order total can be incorrect
 
----
+**Priority: Critical — Blocks the merge**
 
-## 2. Blocker — Enter prints every keypress and can print repeatedly
+The total displayed on the order slip doesn't always match what the customer actually paid. Order 2273 is an example: the slip shows £132, but the customer paid £88.
 
-The global `keydown` listener calls `window.print()` for every Enter key and is never removed. The effect also adds another listener whenever the component mounts.
+This is the biggest issue because packers could send out an order with the wrong amount recorded.
 
-The scanner sends Enter, and the log shows the same slip being printed repeatedly. This is a direct operational problem and can waste slips or put duplicate slips in bags.
+We should use the confirmed order total from the server rather than calculating a new amount from the items. Please add a test using order 2273 to make sure the displayed and printed totals are correct.
 
-**Please fix before merge:** scope the scanner shortcut to the intended workflow, clean up the listener, and ensure one scan produces one print.
+## 2. Packing notes are only saved in localStorage
 
----
+**Priority: High — Blocks the merge**
 
-## 3. Blocker — Notes are stored only in one browser's localStorage
+The notes are stored in the browser rather than somewhere shared.
 
-The note is saved to `localStorage`, so another packer's device cannot see it. The log confirms this: a note entered on one device is empty on another.
+This means a note saved by one packer might not be available when another packer opens the same order on a different computer. That's likely why the birthday-card instruction was missed.
 
-That contradicts the purpose of a shared packing note and can cause packers to miss important instructions.
+These notes need to be saved through the backend and linked to the order so everyone handling it can see them.
 
-**Please fix before merge:** persist notes through the server/shared data model. If the API does not support that yet, don't present localStorage as shared notes.
+## 3. Pressing Enter can trigger printing more than once
 
----
+**Priority: High — Blocks the merge**
 
-## 4. High — The packing slip exposes a customer's phone number to every packer
+The printing shortcut listens for Enter across the whole page. This means pressing Enter in another part of the application can accidentally trigger printing.
 
-The brief says phone numbers are personal data and should only be visible to the owner and customer care. The PR prints `order.phone` directly onto a slip that goes into a bag.
+It can also cause repeated prints if the key event fires more than once.
 
-Even if the phone number is useful somewhere else, putting it on a physical packing slip expands who can see it.
+The shortcut should only work in the intended context, and we should prevent repeated print actions. Please test it with the keyboard and with the search field focused.
 
-**Please fix before merge:** remove the phone number from the packing slip unless Kerbwise explicitly establishes that packers are authorised to receive it.
+## 4. Using dangerouslySetInnerHTML creates a security risk
 
----
+**Priority: High — Blocks the merge**
 
-## 5. High — `dangerouslySetInnerHTML` renders order notes as HTML
+The panel inserts content directly into the page as HTML. If customer or order data contains malicious HTML or JavaScript, it could be executed in the browser.
 
-`order.notes` is inserted into the DOM without sanitisation. The API contract describes notes as text, so there is no reason for the panel to interpret them as HTML.
+We should render this information as normal React text wherever possible. React escapes text by default, which is much safer.
 
-This creates an avoidable injection risk and also makes note rendering harder to predict.
+## 5. Customer phone numbers are exposed unnecessarily
 
-**Please fix before merge:** render notes as text. If rich text is a real product requirement, sanitise it with a narrowly defined allow-list.
+**Priority: Medium — Should be addressed before wider rollout**
 
----
+The panel displays customer phone numbers even though packers may not need them to prepare orders.
 
-## Merge decision
+Customer information should only be available to people who need it for their work. I'd remove the number from this view unless there's a clear operational reason to show it, and check that access is restricted on the server too.
 
-**Block the merge.** The first three issues can directly cause wrong money, duplicate slips, or lost packing instructions. The phone-number exposure and unsafe HTML are also serious enough that I would not ship this panel unchanged.
+## Final recommendation
+
+I wouldn't merge this version yet. The incorrect total, missing shared notes, repeated printing and unsafe HTML handling need fixing first.
+
+Once those changes are made and tested, we can review the phone-number access and confirm the panel is suitable for the packing team.
+
+Thanks, Kwesi.
