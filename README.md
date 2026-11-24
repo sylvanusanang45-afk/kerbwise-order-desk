@@ -1,61 +1,76 @@
 # Kerbwise Order Desk
 
-A small order desk for shop packers, built with Next.js and React against the supplied Kerbwise mock Orders API.
+A simple order management dashboard built with Next.js, React and TypeScript. It helps packing staff find orders, check order details and mark paid orders as fulfilled.
 
-## Run in minutes
+## Features
+- View all 148 orders with pagination.
+- Search by customer name or order number.
+- Filter orders by status.
+- Sort orders by total and date.
+- Open an order to see its details.
+- Mark paid orders as fulfilled.
+- Loading, error and empty states.
+- Keyboard support and mobile-friendly layout.
 
-Requirements:
-- Node.js 18+
-- The supplied `orders-server.js`
+### 1. Install dependencies
+Clone the repository, open the project folder in your terminal and run:
+```bash
+npm install
+```
+### 2. Add the API files
+Copy the challenge-provided `orders-server.js` and its required data files into the project root folder.
+These files are supplied separately and are not included in this GitHub repository.
 
-Terminal 1:
-
+### 3. Start the API
+Open a terminal in the project folder and run:
 ```bash
 node orders-server.js
 ```
+The API runs on port `4000`.
 
-Terminal 2:
-
+### 4. Start the application
+Open a second terminal in the same project folder and run:
 ```bash
-npm install
 npm run dev
 ```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-Open `http://localhost:3000`.
-
-The app defaults to the challenge API at `http://localhost:4000` and uses the supplied demo key. To use another API URL:
-
+## Testing the real API
+Stop the API using `Ctrl + C`, then start it again with:
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:4000 npm run dev
+node orders-server.js --real
 ```
 
-## Test
+The real mode simulates slower responses, request limits and order updates.
 
+## Running tests
+Run the automated tests with:
 ```bash
 npm test
 ```
 
-The test suite covers customer/order-number search, sorting, and the paid-only fulfilment rule.
+## Production build
+To check the production build, run:
+```bash
+npm run build
+```
 
-## What is implemented
+## Tech stack
+- Next.js
+- React
+- TypeScript
+- CSS
+- Vitest
 
-- 148 orders with 50-per-page server pagination
-- Customer and order-number search
-- Status filtering
-- Total/date sorting
-- Order detail panel with lines, totals, address and notes
-- Paid-only fulfilment with API version passed to protect against stale updates
-- Loading, empty and error states
-- Keyboard-accessible controls and scanner-friendly order-number search
-- Responsive layout for 390px screens
-- Periodic refresh when the detail panel is closed
+## Project structure
+```text
+app/          Application pages and styles
+components/   Order desk interface
+lib/          API functions, types and order helpers
+tests/        Automated tests
+```
 
-## Deliberate choices
+## Notes
+The application waits for the server to confirm fulfilment before showing an order as fulfilled. It also handles API errors and order updates to reduce the risk of displaying incorrect information.
 
-Customer phone numbers are not displayed in the desk because the brief says they should only be visible to the owner and customer care, not packers.
-
-I did not build the accountant Excel export or dark mode because neither is part of the Step 1 must-have list. They are product requests for a later iteration.
-
-## Scope
-
-The supplied API remains the source of truth for filtering, sorting, pagination and fulfilment. The UI does not duplicate server-side order data or assume that a fulfilment request succeeded before the API confirms it.
+Built as part of the Kerbwise frontend engineering challenge.
